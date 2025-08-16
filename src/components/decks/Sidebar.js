@@ -1,89 +1,143 @@
-// src/components/Sidebar.js
+// src/components/decks/Sidebar.js
 "use client";
+
 import Link from "next/link";
-import { useState } from "react"; // (1)
+import { useEffect, useState } from "react";
+import { useAuth } from "@/app/providers/AuthProvider";   // ✅ reactive user from context
+import { db } from "@/app/firebase";                      // ✅ Firestore instance
+
+import {
+  collection,
+  addDoc,
+  serverTimestamp,
+  onSnapshot,
+  query,
+  where,
+  orderBy,
+} from "firebase/firestore";
+import Image from "next/image";                        // ✅ for deck icons
 
 export default function Sidebar({ expanded = true }) {
-  const base = "h-screen border-r flex flex-col  bg-neutral-800 text-white";
-  const width = expanded ? "w-70" : "w-16";
+  // 1) read auth state reactively
+  const { user, loading } = useAuth();
+  if (loading) return <div className="p-3 text-sm">Loading…</div>;
 
-  // ---- NEW: local state for decks ----
-  const [decks, setDecks] = useState([]); // (2)
+  // 2) layout styles (let parent control height)
+  const base = "h-full border-r flex flex-col bg-neutral-800 text-white";
+  const width = expanded ? "w-72" : "w-16";
+
+  // 3) local state for this user's decks
+  const [decks, setDecks] = useState([]);
+
+  // 4) subscribe to this user's decks; rerun when user changes
+  useEffect(() => {
+    // reset visible state each time user changes
+    setDecks([]);
+    if (!user) return;
+
+    const decksRef = collection(db, "decks");
+
+    // ⚠️ TEMP: remove orderBy while debugging to avoid index issues
+    const q = query(decksRef, where("userId", "==", user.uid));
+
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const next = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        console.log("onSnapshot decks:", next);   // 👈 SEE RAW DOCS
+        setDecks(next);
+      },
+      (err) => {
+        console.error("onSnapshot error:", err);  // 👈 SEE RULES/INDEX ERRORS
+      }
+    );
+
+    return () => unsubscribe();
+  }, [user]);
 
   return (
-  <aside className={`${base} ${width}`}>
-    <div className="flex items-center gap-2 h-14 px-3 border-b">
-      <div className="size-8 rounded" />
-      {expanded && <span className="font-semibold">Decks </span>}
-    </div>
+    <aside className={`${base} ${width}`}>
+      {/* header */}
+      <div className="flex items-center gap-2 h-14 px-3 border-b border-white/20">
+        <div className="size-8 rounded bg-white/10" />
+        {expanded && <span className="font-semibold">Decks</span>}
+      </div>
 
-    {/* ---- Decks section header ---- */}
-    <div className="px-3 pt-3">
-      {expanded ? (
-        <h2 className="text-xs uppercase tracking-wide text-neutral-500">Decks</h2>
-      ) : (
-        <span className="sr-only">Decks</span>
-      )}
-    </div>
+      {/* section title */}
+      <div className="px-3 pt-3">
+        {expanded ? (
+          <h2 className="text-xs uppercase tracking-wide text-neutral-400">
+            Your decks
+          </h2>
+        ) : (
+          <span className="sr-only">Decks</span>
+        )}
+      </div>
 
-    {/* ---- New Deck input/button ---- */}
-    <div className="px-3 pt-2">
-      {/* ---- Decks list ---- */}
-<nav className="mt-2 px-1 pb-3 space-y-1 overflow-auto">
-  {decks.length === 0 ? (
-    <p className="text-sm text-neutral-400 px-2">No decks yet. Add one ↑</p>
-  ) : (
-    decks.map((deck) => (
-      <DeckLink key={deck.id} deck={deck} expanded={expanded} />
-    ))
-  )}
-</nav>
+      {/* list */}
+      <nav className="mt-2 px-1 pb-3 space-y-1 overflow-auto">
+        {(!user || decks.length === 0) ? (
+          <p className="text-sm text-neutral-400 px-2">
+            {user ? "No decks yet. Add one ↑" : "Sign in to see your decks."}
+          </p>
+        ) : (
+          decks.map((deck) => (
+            <DeckLink key={deck.id} deck={deck} expanded={expanded} />
+          ))
+        )}
+      </nav>
 
-      {/* Controlled input for the new deck name */}
-      <NewDeckForm
-        expanded={expanded}
-        onCreate={(deck) => setDecks((prev) => [deck, ...prev])}
-      />
-    </div>
+      {/* add form */}
+      <div className="px-3 pt-2 pb-4 mt-auto">
+        <NewDeckForm
+          expanded={expanded}
+          onCreate={async ({ id, name }) => {
+            if (!user) {
+              alert("Please sign in to create decks.");
+              return;
+            }
+            await addDoc(collection(db, "decks"), {
+              name,
+              slug: id,                // pretty URL; optional
+              userId: user.uid,        // owner
+              createdAt: serverTimestamp(),
+            });
+            // no setState needed; onSnapshot updates automatically
+          }}
+        />
+      </div>
+    </aside>
+  );
+}
 
-    {/* ---- Decks list goes here (next step) ---- */}
-  </aside>
-);
-
-}// closes export default function Sidebar
-
-
-
+/* ----------------- helpers ----------------- */
 
 function NewDeckForm({ expanded, onCreate }) {
-  // 1) local state for the input text
   const [name, setName] = useState("");
 
-  // 2) handle the click/submit
   function handleSubmit(e) {
-    e.preventDefault();                // stop the page from reloading (form default)
-    const trimmed = name.trim();       // remove extra spaces
-    if (!trimmed) return;              // ignore empty input
+    e.preventDefault();
+    const trimmed = name.trim();
+    if (!trimmed) return;
 
-    // 3) build a simple, URL-friendly id (slug)
+    // simple slug from name
     const id = trimmed
-      .toLowerCase()                   // lowercase
-      .replace(/\s+/g, "-")            // spaces -> dashes
-      .replace(/[^a-z0-9-]/g, "");     // remove non-url-safe chars
+      .toLowerCase()
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9-]/g, "");
 
-    // 4) call the parent with the new deck object
     onCreate({ id, name: trimmed });
-
-    // 5) clear the input for the next deck
     setName("");
   }
 
-  // 6) collapsed mode: show only a "+" button with a tooltip
   if (!expanded) {
     return (
       <button
         onClick={handleSubmit}
-        className="w-10 h-10 grid place-items-center rounded border hover:bg-neutral-100 focus:outline-none focus:ring"
+        className="w-10 h-10 grid place-items-center rounded border border-white/20 hover:bg-neutral-700 focus:outline-none focus:ring"
         aria-label="Add new deck"
         title="Add new deck"
       >
@@ -92,20 +146,19 @@ function NewDeckForm({ expanded, onCreate }) {
     );
   }
 
-  // 7) expanded: show a form with input + button
   return (
     <form onSubmit={handleSubmit} className="flex gap-2">
       <input
         type="text"
-        value={name}                               // controlled value = state
-        onChange={(e) => setName(e.target.value)} // update state on typing
+        value={name}
+        onChange={(e) => setName(e.target.value)}
         placeholder="New deck name"
-        className="flex-1 rounded border px-3 py-2 text-sm focus:outline-none focus:ring"
+        className="flex-1 rounded border border-white/20 bg-transparent px-3 py-2 text-sm placeholder:text-neutral-400 focus:outline-none focus:ring"
         aria-label="New deck name"
       />
       <button
         type="submit"
-        className="rounded border px-3 py-2 text-sm hover:bg-neutral-100 focus:outline-none focus:ring"
+        className="rounded border border-white/20 px-3 py-2 text-sm hover:bg-neutral-700 focus:outline-none focus:ring"
       >
         Add
       </button>
@@ -113,8 +166,8 @@ function NewDeckForm({ expanded, onCreate }) {
   );
 }
 
+import { usePathname } from "next/navigation";
 function DeckLink({ deck, expanded }) {
-  // where the link should point (we'll build this route next)
   const href = `/decks/${deck.id}`;
 
   return (
@@ -122,7 +175,14 @@ function DeckLink({ deck, expanded }) {
       href={href}
       className="flex items-center gap-3 rounded px-3 py-2 hover:bg-neutral-700 focus:outline-none focus:ring"
     >
-      <span aria-hidden>🗂️</span>
+      {/* Replace emoji with your deck_icon.svg */}
+      <Image
+        src="/deck_icon.svg"
+        alt="Deck icon"
+        width={20}
+        height={20}
+        className="flex-shrink-0"
+      />
       {expanded ? (
         <span className="truncate" title={deck.name}>
           {deck.name}
@@ -133,5 +193,3 @@ function DeckLink({ deck, expanded }) {
     </Link>
   );
 }
-
-

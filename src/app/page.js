@@ -1,18 +1,25 @@
-import Image from "next/image";
-import HomePage from '@/components/cards/AddMemos';
-import Header from './layout/Header';
-
+// src/app/page.js
+import AuthButtons from "@/components/auth/AuthButtons";     // sign in/out UI
+import Header from "./layout/Header";                        // your header component
+import HomePage from "@/components/cards/AddMemos";          // your main content
+import DebugAuth from "@/components/auth/DebugAuth";         // (dev-only) auth state badge
 
 export default function Home() {
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-20 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Header />
-        <HomePage />
-          
+    // simple container; SidebarMenu (in layout.js) already provides the <main> shell
+    <div className="font-sans p-8 space-y-8">
 
-      </main> 
-     
+      {/* top-right: auth controls */}
+      <div className="flex justify-end">
+        <AuthButtons />
+      </div>
+
+      {/* your page content */}
+      <Header />
+      <HomePage />
+
+      {/* dev helper: shows "auth: signed out" or the UID; remove when you’re done */}
+      <DebugAuth />
     </div>
   );
 }
