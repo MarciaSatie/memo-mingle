@@ -15,6 +15,8 @@ import {
   doc,
   updateDoc,
   deleteDoc,
+  getDocs,
+  writeBatch,
 } from "firebase/firestore";
 
 export default function ShowDecks({ expanded = true }) {
@@ -50,7 +52,6 @@ export default function ShowDecks({ expanded = true }) {
     );
   }
 
-  // helpers
   function slugify(name) {
     return (name || "")
       .toLowerCase()
@@ -59,13 +60,27 @@ export default function ShowDecks({ expanded = true }) {
       .replace(/[^a-z0-9-]/g, "");
   }
 
+  // Delete all cards under the deck, then the deck doc itself
+  async function deleteDeckCascade(deckId) {
+    // delete subcollection "cards" in a batch (up to 500 per batch)
+    const cardsCol = collection(db, "decks", deckId, "cards");
+    const cardsSnap = await getDocs(cardsCol);
+
+    const batch = writeBatch(db);
+    cardsSnap.forEach((cardDoc) => batch.delete(cardDoc.ref));
+    await batch.commit();
+
+    // delete the deck document
+    await deleteDoc(doc(db, "decks", deckId));
+  }
+
   async function handleRename(e, deck) {
     e.preventDefault();
     e.stopPropagation();
 
     const current = deck.name || "";
     const next = window.prompt("Rename deck:", current);
-    if (next === null) return; // cancelled
+    if (next === null) return;
     const trimmed = next.trim();
     if (!trimmed || trimmed === current) return;
 
@@ -84,10 +99,10 @@ export default function ShowDecks({ expanded = true }) {
     e.preventDefault();
     e.stopPropagation();
 
-    if (!window.confirm(`Delete deck "${deck.name || deck.id}"?`)) return;
+    if (!window.confirm(`Delete deck "${deck.name || deck.id}" and all its cards?`)) return;
     try {
-      await deleteDoc(doc(db, "decks", deck.id));
-      // onSnapshot will update the list automatically
+      await deleteDeckCascade(deck.id);
+      // onSnapshot updates the list automatically
     } catch (err) {
       console.error("Failed to delete deck:", err);
       alert("Failed to delete deck.");
