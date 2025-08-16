@@ -27,9 +27,14 @@ async function prettifyHtml(source) {
   }
 }
 
+ function getCurrentDate() {
+  const date = new Date();
+  return date.toISOString().split("T")[0]; // Format as YYYY-MM-DD
+}
+
 export default function AddCard({ deckId }) {
   const [title, setTitle] = useState("");
-  const [date, setDate] = useState("");
+  const [date, setDate] = useState(getCurrentDate());
   const [content, setContent] = useState("");
   const [isHtmlMode, setIsHtmlMode] = useState(false);
   const [saving, setSaving] = useState(false);
