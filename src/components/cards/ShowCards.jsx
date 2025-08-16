@@ -1,3 +1,4 @@
+// src/components/cards/ShowCards.jsx
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -9,10 +10,9 @@ import {
   doc,
   deleteDoc,
   updateDoc,
-  serverTimestamp,
 } from "firebase/firestore";
-import { Pencil, Trash2 } from "lucide-react";
-import TipTapEditor from "../editor/TipTapEditor"; // ✅ Import your editor
+import { Pencil, Trash2, Star } from "lucide-react";
+import TipTapEditor from "../editor/TipTapEditor";
 
 export default function ShowCards({ deckId }) {
   const [cards, setCards] = useState([]);
@@ -49,7 +49,7 @@ export default function ShowCards({ deckId }) {
       title: editTitle.trim(),
       date: editDate || new Date().toISOString().split("T")[0],
       content: editContent,
-      updatedAt: serverTimestamp(),
+      updatedAt: new Date(),
     });
     closeEdit();
   }
@@ -67,71 +67,104 @@ export default function ShowCards({ deckId }) {
     await deleteDoc(doc(db, "decks", deckId, "cards", cardId));
   }
 
+  async function toggleFavorite(card, e) {
+    e?.stopPropagation?.();
+    const ref = doc(db, "decks", deckId, "cards", card.id);
+    try {
+      await updateDoc(ref, { favorite: card.favorite ? false : true });
+      // onSnapshot will refresh the UI
+    } catch (err) {
+      console.error("Failed to toggle favorite:", err);
+      alert("Failed to update favorite.");
+    }
+  }
+
   return (
     <>
       {/* Cards container */}
       <div className="relative w-full h-[480px] bg-gradient-to-br from-slate-50 to-slate-100 rounded-2xl border overflow-hidden">
-        {cards.map((card, index) => (
-          <div
-            key={card.id}
-            onMouseEnter={() => setHoveredId(card.id)}
-            onMouseLeave={() => setHoveredId(null)}
-            className="absolute w-72 h-96 rounded-2xl border p-4 transition-transform duration-300 cursor-pointer bg-white shadow-sm"
-            style={{
-              top: `${index * 24}px`,
-              left: `${index * 24}px`,
-              zIndex: hoveredId === card.id ? 999 : index,
-              transform: hoveredId === card.id ? "scale(1.04)" : "scale(1)",
-            }}
-          >
-            {/* Action icons pinned top-right */}
-            <div className="absolute top-3 right-3 flex gap-1">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  startEdit(card);
-                }}
-                className="inline-flex items-center justify-center rounded-md border border-fuchsia-500 bg-white hover:bg-gray-100 p-1.5"
-                title="Edit"
-                aria-label="Edit card"
-              >
-                <Pencil size={16} className="text-gray-700" />
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  remove(card.id);
-                }}
-                className="inline-flex items-center justify-center rounded-md border border-fuchsia-500 bg-white hover:bg-gray-100 p-1.5"
-                title="Delete"
-                aria-label="Delete card"
-              >
-                <Trash2 size={16} className="text-gray-700" />
-              </button>
-            </div>
+        {cards.map((card, index) => {
+          const isFav = !!card.favorite;
+          return (
+            <div
+              key={card.id}
+              onMouseEnter={() => setHoveredId(card.id)}
+              onMouseLeave={() => setHoveredId(null)}
+              className="absolute w-72 h-96 rounded-2xl border p-4 transition-transform duration-300 cursor-pointer bg-white shadow-sm"
+              style={{
+                top: `${index * 24}px`,
+                left: `${index * 24}px`,
+                zIndex: hoveredId === card.id ? 999 : index,
+                transform: hoveredId === card.id ? "scale(1.04)" : "scale(1)",
+              }}
+            >
+              {/* Action icons pinned top-right */}
+              <div className="absolute top-3 right-3 flex gap-1">
+                {/* Favorite */}
+                <button
+                  onClick={(e) => toggleFavorite(card, e)}
+                  className={`inline-flex items-center justify-center rounded-md border bg-white hover:bg-gray-100 p-1.5 ${
+                    isFav
+                      ? "border-yellow-500 text-yellow-500"
+                      : "border-fuchsia-500 text-gray-700"
+                  }`}
+                  title={isFav ? "Unfavorite" : "Favorite"}
+                  aria-label={isFav ? "Unfavorite card" : "Favorite card"}
+                  aria-pressed={isFav}
+                >
+                  <Star size={16} fill={isFav ? "currentColor" : "none"} />
+                </button>
 
-            {/* Header row: title + date */}
-            <div className="pr-14">
-              <h2 className="font-semibold text-lg mb-1 line-clamp-1">
-                {card.title || "Untitled"}
-              </h2>
-              <p className="text-xs text-gray-500">{card.date || ""}</p>
-            </div>
+                {/* Edit */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    startEdit(card);
+                  }}
+                  className="inline-flex items-center justify-center rounded-md border border-fuchsia-500 bg-white hover:bg-gray-100 p-1.5"
+                  title="Edit"
+                  aria-label="Edit card"
+                >
+                  <Pencil size={16} className="text-gray-700" />
+                </button>
 
-            {/* Main content with pink border */}
-            <div className="mt-3 h-[calc(100%-88px)]">
-              <div className="tiptap prose max-h-64 overflow-auto border border-fuchsia-500 rounded-xl p-3">
-                <div dangerouslySetInnerHTML={{ __html: card.content }} />
+                {/* Delete */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    remove(card.id);
+                  }}
+                  className="inline-flex items-center justify-center rounded-md border border-fuchsia-500 bg-white hover:bg-gray-100 p-1.5"
+                  title="Delete"
+                  aria-label="Delete card"
+                >
+                  <Trash2 size={16} className="text-gray-700" />
+                </button>
+              </div>
+
+              {/* Header row: title + date */}
+              <div className="pr-14">
+                <h2 className="font-semibold text-lg mb-1 line-clamp-1">
+                  {card.title || "Untitled"}
+                </h2>
+                <p className="text-xs text-gray-500">{card.date || ""}</p>
+              </div>
+
+              {/* Main content with pink border */}
+              <div className="mt-3 h-[calc(100%-88px)]">
+                <div className="tiptap prose max-h-64 overflow-auto border border-fuchsia-500 rounded-xl p-3">
+                  <div dangerouslySetInnerHTML={{ __html: card.content }} />
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
-      {/* Edit Modal with TipTap (outside content area) */}
+      {/* Edit Modal with TipTap */}
       {editing && (
         <div className="fixed inset-0 z-50 grid place-items-center pointer-events-none">
-          {/* Non-interactive dim backdrop so clicks pass through */}
+          {/* Dim backdrop (click-through) */}
           <div className="absolute inset-0 bg-black/40 pointer-events-none" />
           {/* Interactive panel */}
           <div className="relative w-[720px] max-w-[95vw] bg-white text-gray-800 rounded-2xl shadow-xl border border-title p-4 pointer-events-auto max-h-[90vh] overflow-y-auto">
