@@ -13,8 +13,6 @@ import TipTapEditor from "../editor/TipTapEditor";
 import prettier from "prettier/standalone";
 
 /* ---------------- Helpers ---------------- */
-
-// Lazy-load the Prettier HTML plugin only when needed (avoids Turbopack issues)
 async function prettifyHtml(source) {
   try {
     const htmlPlugin = await import("prettier/plugins/html");
@@ -24,11 +22,8 @@ async function prettifyHtml(source) {
     });
     return pretty;
   } catch (err) {
-    console.warn(
-      "⚠️ Prettier HTML plugin load/format failed:",
-      err?.message || err
-    );
-    return source; // fallback to original text
+    console.warn("⚠️ Prettier HTML plugin load/format failed:", err?.message || err);
+    return source;
   }
 }
 
@@ -39,6 +34,7 @@ export default function AddCard({ deckId }) {
   const [isHtmlMode, setIsHtmlMode] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [editorJSON, setEditorJSON] = useState(null);
 
   async function handleSave() {
     setError("");
@@ -53,15 +49,17 @@ export default function AddCard({ deckId }) {
 
     setSaving(true);
     try {
-      // Prettify HTML before saving (works for both modes)
       const contentToSave = await prettifyHtml(content || "");
 
       await addDoc(collection(db, "decks", deckId, "cards"), {
         title: title.trim(),
         date: date || new Date().toISOString().split("T")[0],
         content: contentToSave,
+        contentClasses: "tiptap-content prose prose-slate max-w-none leading-relaxed",
         createdAt: serverTimestamp(),
+        json: editorJSON ?? null,
       });
+      console.log("Card saved successfully");
 
       // Reset form
       setTitle("");
@@ -75,17 +73,14 @@ export default function AddCard({ deckId }) {
     }
   }
 
-  // When switching into HTML mode, pretty-print existing content for readability
   useEffect(() => {
     if (!isHtmlMode || !content) return;
     (async () => {
       const pretty = await prettifyHtml(content);
       setContent(pretty);
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isHtmlMode]);
 
-  // Manual “Format HTML” action
   async function formatHtmlNow() {
     if (!content) return;
     const pretty = await prettifyHtml(content);
@@ -100,24 +95,22 @@ export default function AddCard({ deckId }) {
           placeholder="Card title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="bg-white text-black flex-1 border rounded-xl px-3 py-2"
+          className="bg-white text-gray-700 flex-1 border rounded-xl px-3 py-2"
         />
         <input
-        
           type="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
-          className="border rounded-xl px-3 py-2 bg-white text-black"
+          className="border rounded-xl px-3 py-2 bg-white text-gray-700"
         />
       </div>
 
       <div>
         <div className="flex items-center justify-between mb-2">
-
           <div className="flex items-center">
             <button
               onClick={() => setIsHtmlMode((v) => !v)}
-              className="text-sm px-3 py-1 rounded-xl border hover:bg-gray-50"
+              className="text-sm px-3 py-1 rounded-xl border hover:bg-gray-50 text-gray-700"
             >
               {isHtmlMode ? "Switch to Editor" : "Switch to HTML"}
             </button>
@@ -125,7 +118,7 @@ export default function AddCard({ deckId }) {
             {isHtmlMode && (
               <button
                 onClick={formatHtmlNow}
-                className="ml-2 text-sm px-3 py-1 rounded-xl border hover:bg-gray-50"
+                className="ml-2 text-sm px-3 py-1 rounded-xl border hover:bg-gray-50 text-gray-700"
                 disabled={!content}
                 title="Prettify the HTML"
               >
@@ -146,9 +139,12 @@ export default function AddCard({ deckId }) {
         ) : (
           <TipTapEditor
             value={content}
-            onChange={setContent}
+            onChange={(html, json) => {
+              setContent(html);
+              setEditorJSON(json);
+            }}
             disabled={isHtmlMode}
-            className="border rounded-xl p-3 bg-white text-black min-h-[200px]"
+            className="border rounded-xl p-3 bg-white text-gray-700 min-h-[200px]"
           />
         )}
       </div>
@@ -158,7 +154,7 @@ export default function AddCard({ deckId }) {
       <button
         onClick={handleSave}
         disabled={saving}
-        className="px-4 py-2 rounded-2xl bg-fuchsia-300 text-white hover:bg-fuchsia-400 disabled:opacity-60"
+        className="px-4 py-2 rounded-2xl bg-fuchsia-300 text-gray-700 hover:bg-fuchsia-400 disabled:opacity-60"
       >
         {saving ? "Saving..." : "Save Card"}
       </button>

@@ -57,18 +57,23 @@ h1, h2 {
 .tiptap ol { list-style: decimal; padding-left: 1.5rem; }
 .tiptap li { margin: 0.25rem 0; }
 
-/* Code blocks */
-.tiptap pre {
-  background: #f4f4f5;          /* neutral-100/200 */
-  color: #111827;               /* neutral-900 */
-  padding: 0.75rem;             /* p-3 */
-  border-radius: 0.5rem;        /* rounded-lg */
-  overflow: auto;               /* allow horizontal scroll */
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  font-size: 0.9rem;
-  line-height: 1.5;
-  border: 1px solid rgba(0,0,0,0.06);
+.tiptap h4,
+.tiptap h5,
+.tiptap h6 {
+  color: #4a5566; /* Tailwind's gray-700 */
 }
+
+/* globals.css */
+.tiptap-content :where(h1,h2,h3){ @apply font-semibold mt-3 mb-2; }
+.tiptap-content ul{ @apply list-disc pl-6 my-2; }
+.tiptap-content ol{ @apply list-decimal pl-6 my-2; }
+.tiptap-content p{ @apply my-2; }
+.tiptap-content code{ @apply rounded px-1; }
+.tiptap-content pre{ @apply p-3 rounded border overflow-auto; }
+.tiptap-content blockquote{ @apply border-l-4 pl-3 italic my-3; }
+
+
+
 /* Code blocks */
 .tiptap pre {
   background: #1e1e1e;   /* dark grey, like VSCode dark */
@@ -96,4 +101,48 @@ h1, h2 {
   border-radius: 0.375rem;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   font-size: 0.9em;
+}
+
+/* Headings */
+.tiptap-content :where(h1, h2, h3) {
+  @apply font-semibold mt-5 mb-3; /* was mt-3 mb-2 → now taller */
+}
+.tiptap h4,
+.tiptap h5,
+.tiptap h6 {
+  color: #4a5566; /* Tailwind gray-700 */
+  margin-top: 1rem;   /* add spacing */
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+}
+
+/* Paragraphs */
+.tiptap-content p {
+  @apply my-3; /* was my-2 → slightly more space */
+}
+
+/* Lists */
+.tiptap-content ul {
+  @apply list-disc pl-7 my-3; /* extra padding and margin */
+}
+.tiptap-content ol {
+  @apply list-decimal pl-7 my-3;
+}
+.tiptap-content li {
+  margin: 0.4rem 0; /* more vertical gap between items */
+}
+
+/* Blockquote */
+.tiptap-content blockquote {
+  @apply border-l-4 pl-4 italic my-4; /* extra left padding + more vertical spacing */
+}
+
+/* Code blocks */
+.tiptap-content pre {
+  @apply p-4 rounded border overflow-auto my-4; /* more padding and margin */
+}
+
+/* Inline code */
+.tiptap-content code {
+  @apply rounded px-1.5 py-0.5; /* slightly bigger padding */
 }
