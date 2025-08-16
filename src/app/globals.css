@@ -62,6 +62,24 @@ h1, h2 {
 .tiptap h6 {
   color: #4a5566; /* Tailwind's gray-700 */
 }
+/* TipTap editor (live) heading + emphasis styles */
+.tiptap h1 { font-size: 1.875rem; line-height: 2.25rem; font-weight: 700; margin-top: 1.25rem; margin-bottom: 0.75rem; } /* text-3xl */
+.tiptap h2 { font-size: 1.5rem;   line-height: 2rem;    font-weight: 700; margin-top: 1.25rem; margin-bottom: 0.75rem; } /* text-2xl */
+.tiptap h3 { font-size: 1.25rem;  line-height: 1.75rem; font-weight: 600; margin-top: 1rem;    margin-bottom: 0.75rem; } /* text-xl */
+.tiptap h4 { font-size: 1.125rem; line-height: 1.75rem; font-weight: 600; margin-top: 1rem;    margin-bottom: 0.5rem;  } /* text-lg */
+.tiptap h5 { font-size: 1rem;     line-height: 1.5rem;  font-weight: 600; margin-top: 0.75rem; margin-bottom: 0.5rem;  } /* text-base */
+.tiptap h6 { font-size: 0.875rem; line-height: 1.25rem; font-weight: 600; margin-top: 0.75rem; margin-bottom: 0.5rem;  } /* text-sm */
+
+/* match your color choices */
+.tiptap h1, .tiptap h2 { color: var(--title); }
+.tiptap h4, .tiptap h5, .tiptap h6 { color: #4a5566; }
+
+/* common text elements in the editor */
+.tiptap p { margin: 0.75rem 0; }
+.tiptap strong { font-weight: 700; }
+.tiptap em { font-style: italic; }
+.tiptap a { color: #2563eb; text-decoration: underline; }
+.tiptap a:hover { text-decoration: none; }  
 
 /* globals.css */
 .tiptap-content :where(h1,h2,h3){ @apply font-semibold mt-3 mb-2; }

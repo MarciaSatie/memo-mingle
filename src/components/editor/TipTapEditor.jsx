@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Heading from "@tiptap/extension-heading";
@@ -15,20 +15,10 @@ import {
   Code as CodeIcon,
   List as BulletIcon,
   ListOrdered as OrderedIcon,
-  Heading1,
-  Heading2,
-  Heading3,
-  Heading4,
-  Heading5,
-  Heading6,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
-  AlignJustify,
-  Palette,
-  X as ClearIcon,
-  Link as LinkIcon,
-  Link2Off as UnlinkIcon,
+  Heading1, Heading2, Heading3, Heading4, Heading5, Heading6,
+  AlignLeft, AlignCenter, AlignRight, AlignJustify,
+  Palette, X as ClearIcon, Link as LinkIcon, Link2Off as UnlinkIcon,
+  PaintBucket
 } from "lucide-react";
 
 export default function TipTapEditor({
@@ -43,7 +33,7 @@ export default function TipTapEditor({
       StarterKit,
       TextStyle,
       Color,
-      Heading.configure({ levels: [1, 2, 3, 4, 5, 6] }), // ✅ Now supports h1–h6
+      Heading.configure({ levels: [1, 2, 3, 4, 5, 6] }),
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       Link.configure({
         openOnClick: false,
@@ -55,6 +45,9 @@ export default function TipTapEditor({
     content: value || "",
     onUpdate: ({ editor }) => onChange?.(editor.getHTML()),
   });
+
+  // local color value to apply on demand
+  const [colorValue, setColorValue] = useState("#000000");
 
   useEffect(() => {
     if (editor && editor.getHTML() !== (value || "")) {
@@ -71,7 +64,7 @@ export default function TipTapEditor({
   const btnBase =
     "px-2.5 py-1.5 border rounded text-sm grid place-items-center bg-neutral-100 hover:bg-neutral-200";
   const activeCls = "bg-neutral-300";
-  const dis = (!editor || disabled) ? "opacity-60 cursor-not-allowed" : "";
+  const dis = !editor || disabled ? "opacity-60 cursor-not-allowed" : "";
 
   function setLink() {
     if (!editor) return;
@@ -90,175 +83,188 @@ export default function TipTapEditor({
     editor?.chain().focus().unsetLink().run();
   }
 
+  // apply currently picked color to the selection
+  function applyPickedColor() {
+    if (!editor || disabled) return;
+    editor.chain().focus().setColor(colorValue).run();
+  }
+
+  // quick swatch
+  function applySwatch(hex) {
+    if (!editor || disabled) return;
+    setColorValue(hex);
+    editor.chain().focus().setColor(hex).run();
+  }
+
+  let styleValue = "flex gap-1 border-2 border-neutral-300 rounded-lg p-1";
+  let styleValue2 = "flex items-center gap-1 border-2 border-neutral-300 rounded-lg p-1";
+  let iconSize = 12;
   return (
     <div className={className}>
       {/* Toolbar */}
       <div className="mb-2 flex flex-wrap items-center gap-2">
         {/* Headings */}
-        <div className="flex gap-1">
+        <div className={styleValue}>
           {[1, 2, 3, 4, 5, 6].map((level) => {
-            const Icon = {
-              1: Heading1,
-              2: Heading2,
-              3: Heading3,
-              4: Heading4,
-              5: Heading5,
-              6: Heading6,
-            }[level];
+            const Icon = { 1: Heading1, 2: Heading2, 3: Heading3, 4: Heading4, 5: Heading5, 6: Heading6 }[level];
             return (
               <button
                 key={level}
                 type="button"
-                onClick={() =>
-                  editor.chain().focus().toggleHeading({ level }).run()
-                }
+                onClick={() => editor.chain().focus().setHeading({ level }).run()}
                 disabled={!editor || disabled}
-                className={`${btnBase} ${
-                  editor.isActive("heading", { level }) ? activeCls : ""
-                } ${dis}`}
+                className={`${btnBase} ${editor.isActive("heading", { level }) ? activeCls : ""} ${dis}`}
                 title={`Heading ${level}`}
                 aria-pressed={editor.isActive("heading", { level })}
               >
-                <Icon size={16} />
+                <Icon size={iconSize} />
               </button>
             );
           })}
         </div>
 
         {/* Inline styles */}
-        <div className="flex gap-1">
+        <div className={styleValue}>
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleBold().run()}
             disabled={!editor || disabled}
-            className={`${btnBase} ${
-              editor.isActive("bold") ? activeCls : ""
-            } ${dis}`}
+            className={`${btnBase} ${editor.isActive("bold") ? activeCls : ""} ${dis}`}
             title="Bold (Ctrl+B)"
             aria-pressed={editor.isActive("bold")}
           >
-            <BoldIcon size={16} />
+            <BoldIcon size={iconSize} />
           </button>
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleItalic().run()}
             disabled={!editor || disabled}
-            className={`${btnBase} ${
-              editor.isActive("italic") ? activeCls : ""
-            } ${dis}`}
+            className={`${btnBase} ${editor.isActive("italic") ? activeCls : ""} ${dis}`}
             title="Italic (Ctrl+I)"
             aria-pressed={editor.isActive("italic")}
           >
-            <ItalicIcon size={16} />
+            <ItalicIcon size={iconSize} />
           </button>
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleCodeBlock().run()}
             disabled={!editor || disabled}
-            className={`${btnBase} ${
-              editor.isActive("codeBlock") ? activeCls : ""
-            } ${dis}`}
+            className={`${btnBase} ${editor.isActive("codeBlock") ? activeCls : ""} ${dis}`}
             title="Code block"
             aria-pressed={editor.isActive("codeBlock")}
           >
-            <CodeIcon size={16} />
+            <CodeIcon size={iconSize} />
           </button>
         </div>
 
         {/* Lists */}
-        <div className="flex gap-1">
+        <div className={styleValue}>
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleBulletList().run()}
             disabled={!editor || disabled}
-            className={`${btnBase} ${
-              editor.isActive("bulletList") ? activeCls : ""
-            } ${dis}`}
+            className={`${btnBase} ${editor.isActive("bulletList") ? activeCls : ""} ${dis}`}
             title="Bullet list"
             aria-pressed={editor.isActive("bulletList")}
           >
-            <BulletIcon size={16} />
+            <BulletIcon size={iconSize} />
           </button>
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleOrderedList().run()}
             disabled={!editor || disabled}
-            className={`${btnBase} ${
-              editor.isActive("orderedList") ? activeCls : ""
-            } ${dis}`}
+            className={`${btnBase} ${editor.isActive("orderedList") ? activeCls : ""} ${dis}`}
             title="Ordered list"
             aria-pressed={editor.isActive("orderedList")}
           >
-            <OrderedIcon size={16} />
+            <OrderedIcon size={iconSize} />
           </button>
         </div>
 
         {/* Alignment */}
-        <div className="flex gap-1">
+        <div className={styleValue}>
           <button
             type="button"
             onClick={() => editor.chain().focus().setTextAlign("left").run()}
             disabled={!editor || disabled}
-            className={`${btnBase} ${
-              editor.isActive({ textAlign: "left" }) ? activeCls : ""
-            } ${dis}`}
+            className={`${btnBase} ${editor.isActive({ textAlign: "left" }) ? activeCls : ""} ${dis}`}
             title="Align left"
             aria-pressed={editor.isActive({ textAlign: "left" })}
           >
-            <AlignLeft size={16} />
+            <AlignLeft size={iconSize} />
           </button>
           <button
             type="button"
             onClick={() => editor.chain().focus().setTextAlign("center").run()}
             disabled={!editor || disabled}
-            className={`${btnBase} ${
-              editor.isActive({ textAlign: "center" }) ? activeCls : ""
-            } ${dis}`}
+            className={`${btnBase} ${editor.isActive({ textAlign: "center" }) ? activeCls : ""} ${dis}`}
             title="Align center"
             aria-pressed={editor.isActive({ textAlign: "center" })}
           >
-            <AlignCenter size={16} />
+            <AlignCenter size={iconSize} />
           </button>
           <button
             type="button"
             onClick={() => editor.chain().focus().setTextAlign("right").run()}
             disabled={!editor || disabled}
-            className={`${btnBase} ${
-              editor.isActive({ textAlign: "right" }) ? activeCls : ""
-            } ${dis}`}
+            className={`${btnBase} ${editor.isActive({ textAlign: "right" }) ? activeCls : ""} ${dis}`}
             title="Align right"
             aria-pressed={editor.isActive({ textAlign: "right" })}
           >
-            <AlignRight size={16} />
+            <AlignRight size={iconSize} />
           </button>
           <button
             type="button"
             onClick={() => editor.chain().focus().setTextAlign("justify").run()}
             disabled={!editor || disabled}
-            className={`${btnBase} ${
-              editor.isActive({ textAlign: "justify" }) ? activeCls : ""
-            } ${dis}`}
+            className={`${btnBase} ${editor.isActive({ textAlign: "justify" }) ? activeCls : ""} ${dis}`}
             title="Justify"
             aria-pressed={editor.isActive({ textAlign: "justify" })}
           >
-            <AlignJustify size={16} />
+            <AlignJustify size={iconSize} />
           </button>
         </div>
 
         {/* Text color + Link */}
-        <div className="flex items-center gap-1">
+        <div className={styleValue2}>
+          {/* picker (doesn't apply automatically) */}
           <span className="inline-flex items-center gap-1 px-2 py-1 border rounded bg-neutral-100">
             <Palette size={14} />
             <input
               type="color"
-              onChange={(e) =>
-                editor.chain().focus().setColor(e.target.value).run()
-              }
+              value={colorValue}
+              onChange={(e) => setColorValue(e.target.value)}
               disabled={!editor || disabled}
               className="h-5 w-6 border-0 bg-transparent p-0"
-              title="Text color"
+              title="Pick color"
             />
           </span>
+
+          {/* apply current color */}
+          <button
+            type="button"
+            onClick={applyPickedColor}
+            disabled={!editor || disabled}
+            className={`${btnBase} ${dis}`}
+            title="Apply color to selection"
+          >
+            <PaintBucket size={iconSize} />
+          </button>
+
+          {/* quick swatches */}
+          {["#ef4444", "#eab308", "#22c55e", "#3b82f6", "#a855f7"].map((hex) => (
+            <button
+              key={hex}
+              type="button"
+              onClick={() => applySwatch(hex)}
+              disabled={!editor || disabled}
+              className="h-6 w-6 rounded border"
+              style={{ backgroundColor: hex }}
+              title={`Set ${hex}`}
+            />
+          ))}
+
+          {/* clear color */}
           <button
             type="button"
             onClick={() => editor.chain().focus().unsetColor().run()}
@@ -269,17 +275,19 @@ export default function TipTapEditor({
             <ClearIcon size={14} />
           </button>
 
+         
+        </div>
+        <div className={styleValue2}>
+             {/* Link / Unlink */}
           <button
             type="button"
             onClick={setLink}
             disabled={!editor || disabled}
-            className={`${btnBase} ${
-              editor.isActive("link") ? activeCls : ""
-            } ${dis}`}
+            className={`${btnBase} ${editor.isActive("link") ? activeCls : ""} ${dis}`}
             title="Add or edit link"
             aria-pressed={editor.isActive("link")}
           >
-            <LinkIcon size={16} />
+            <LinkIcon size={iconSize} />
           </button>
           <button
             type="button"
@@ -288,9 +296,9 @@ export default function TipTapEditor({
             className={`${btnBase} ${dis}`}
             title="Remove link"
           >
-            <UnlinkIcon size={16} />
+            <UnlinkIcon size={iconSize} />
           </button>
-        </div>
+          </div>
       </div>
 
       {/* Editor */}
