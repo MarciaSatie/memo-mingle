@@ -1,8 +1,21 @@
 @import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --title: #e729b8;
+}
+.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+  --title: #e729b8;
+}
+:root {
+  --font-geist-sans: "Geist Sans", sans-serif;
+  --font-geist-mono: "Geist Mono", monospace;
 }
 
 @theme inline {
@@ -10,17 +23,31 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  /* ADD: expose it to Tailwind as `text-title`, `bg-title`, `border-title`, etc. */
+  --color-title: var(--title);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --title: #e729b8;
   }
 }
+@media (prefers-color-scheme: light) {
+  :root {
+    --background: #ffffff;
+    --foreground: #171717;
+    --title: #e729b8;
+  }
+}
+
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: Roboto,Arial, Helvetica, sans-serif;
+}
+h1, h2 {
+  color: var(--title);
 }

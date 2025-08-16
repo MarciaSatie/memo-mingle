@@ -4,7 +4,7 @@
 'use client'; // Required for client-side components in Next.js App Router
 
 import { useState, useEffect } from 'react';
-import { db } from '../../firebase'; // Adjust path based on where you put firebase.js
+import { db } from '../../app/firebase'; // Adjust path based on where you put firebase.js
 import { collection, addDoc, getDocs, onSnapshot, query, orderBy } from 'firebase/firestore';
 
 export default function HomePage() {

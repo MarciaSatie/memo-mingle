@@ -1,12 +1,9 @@
 // src/app/firebase.js
+import { initializeApp } from "firebase/app";
+import { getFirestore } from "firebase/firestore";
+import { getAnalytics } from "firebase/analytics"; // no isSupported import
+import { getAuth } from "firebase/auth";
 
-// Import the functions you need from the Firebase SDKs
-import { initializeApp } from 'firebase/app'; // <--- YOU NEED THIS ONE!
-import { getFirestore } from 'firebase/firestore';
-import { getAnalytics } from 'firebase/analytics'; // <--- AND THIS ONE!
-import { getAuth } from 'firebase/auth'; // <--- AND THIS ONE!
-
-// Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyB7r7ioo_QMZjFWr8kCsL9qlLkGmQp8j-k",
   authDomain: "memo-mingle.firebaseapp.com",
@@ -17,11 +14,19 @@ const firebaseConfig = {
   measurementId: "G-1BBTPF9BCD"
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// Export all the initialized services
-export { app, analytics, db, auth };
+let analytics = null;
+
+// Only initialize analytics in the browser
+if (typeof window !== "undefined") {
+  import("firebase/analytics").then(({ getAnalytics, isSupported }) => {
+    isSupported().then((supported) => {
+      if (supported) analytics = getAnalytics(app);
+    });
+  });
+}
+
+export { app, db, auth, analytics };
