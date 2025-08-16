@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Star } from "lucide-react";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { db } from "@/app/firebase";
 import {
@@ -62,7 +62,6 @@ export default function ShowDecks({ expanded = true }) {
 
   // Delete all cards under the deck, then the deck doc itself
   async function deleteDeckCascade(deckId) {
-    // delete subcollection "cards" in a batch (up to 500 per batch)
     const cardsCol = collection(db, "decks", deckId, "cards");
     const cardsSnap = await getDocs(cardsCol);
 
@@ -70,7 +69,6 @@ export default function ShowDecks({ expanded = true }) {
     cardsSnap.forEach((cardDoc) => batch.delete(cardDoc.ref));
     await batch.commit();
 
-    // delete the deck document
     await deleteDoc(doc(db, "decks", deckId));
   }
 
@@ -109,52 +107,85 @@ export default function ShowDecks({ expanded = true }) {
     }
   }
 
+  async function handleToggleFavorite(e, deck) {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      await updateDoc(doc(db, "decks", deck.id), {
+        favorite: !!deck.favorite ? false : true,
+      });
+      // Snapshot will refresh UI
+    } catch (err) {
+      console.error("Failed to toggle favorite:", err);
+      alert("Failed to update favorite.");
+    }
+  }
+
   return (
     <nav className="mt-2 px-1 pb-3 space-y-1 overflow-auto">
-      {decks.map((deck) => (
-        <div
-          key={deck.id}
-          className="flex items-center justify-between rounded px-3 py-2 hover:bg-neutral-700"
-        >
-          {/* Left: link to deck */}
-          <Link href={`/decks/${deck.id}`} className="flex items-center gap-3 min-w-0">
-            <Image
-              src="/deck_icon.svg"
-              alt="Deck icon"
-              width={20}
-              height={20}
-              className="flex-shrink-0"
-            />
-            {expanded ? (
-              <span className="truncate" title={deck.name || deck.id}>
-                {deck.name || deck.id}
-              </span>
-            ) : (
-              <span className="sr-only">{deck.name || deck.id}</span>
-            )}
-          </Link>
+      {decks.map((deck) => {
+        const isFav = !!deck.favorite;
+        return (
+          <div
+            key={deck.id}
+            className="flex items-center justify-between rounded px-3 py-2 hover:bg-neutral-700"
+          >
+            {/* Left: link to deck */}
+            <Link href={`/decks/${deck.id}`} className="flex items-center gap-3 min-w-0">
+              <Image
+                src="/deck_icon.svg"
+                alt="Deck icon"
+                width={20}
+                height={20}
+                className="flex-shrink-0"
+              />
+              {expanded ? (
+                <span className="truncate" title={deck.name || deck.id}>
+                  {deck.name || deck.id}
+                </span>
+              ) : (
+                <span className="sr-only">{deck.name || deck.id}</span>
+              )}
+            </Link>
 
-          {/* Right: actions */}
-          <div className="flex items-center gap-2 pl-3">
-            <button
-              onClick={(e) => handleRename(e, deck)}
-              className="p-1.5 rounded hover:bg-neutral-600"
-              aria-label="Edit deck"
-              title="Edit deck"
-            >
-              <Pencil size={16} />
-            </button>
-            <button
-              onClick={(e) => handleDelete(e, deck)}
-              className="p-1.5 rounded hover:bg-neutral-600 text-red-300 hover:text-red-200"
-              aria-label="Delete deck"
-              title="Delete deck"
-            >
-              <Trash2 size={16} />
-            </button>
+            {/* Right: actions */}
+            <div className="flex items-center gap-2 pl-3">
+              {/* Favorite */}
+              <button
+                onClick={(e) => handleToggleFavorite(e, deck)}
+                className={`p-1.5 rounded hover:bg-neutral-600 ${
+                  isFav ? "text-yellow-400" : "text-neutral-300"
+                }`}
+                aria-label={isFav ? "Unfavorite deck" : "Favorite deck"}
+                title={isFav ? "Unfavorite" : "Favorite"}
+              >
+                {/* Lucide Star is outline; we color it to indicate favorite */}
+                <Star size={16} />
+              </button>
+
+              {/* Edit */}
+              <button
+                onClick={(e) => handleRename(e, deck)}
+                className="p-1.5 rounded hover:bg-neutral-600"
+                aria-label="Edit deck"
+                title="Edit deck"
+              >
+                <Pencil size={16} />
+              </button>
+
+              {/* Delete */}
+              <button
+                onClick={(e) => handleDelete(e, deck)}
+                className="p-1.5 rounded hover:bg-neutral-600 text-red-300 hover:text-red-200"
+                aria-label="Delete deck"
+                title="Delete deck"
+              >
+                <Trash2 size={16} />
+              </button>
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </nav>
   );
 }
