@@ -8,6 +8,10 @@ import TextAlign from "@tiptap/extension-text-align";
 import { TextStyle } from "@tiptap/extension-text-style";
 import Color from "@tiptap/extension-color";
 import Link from "@tiptap/extension-link";
+import { Details, DetailsSummary, DetailsContent } from '@tiptap/extension-details'
+import { Placeholder } from '@tiptap/extensions'
+import { SquarePlus, ChevronDown } from "lucide-react";
+
 
 import {
   Bold as BoldIcon,
@@ -30,19 +34,48 @@ export default function TipTapEditor({
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
-      StarterKit,
-      TextStyle,
-      Color,
-      Heading.configure({ levels: [1, 2, 3, 4, 5, 6] }),
-      TextAlign.configure({ types: ["heading", "paragraph"] }),
-      Link.configure({
+    StarterKit,
+    TextStyle,
+    Color,
+    Heading.configure({ levels: [1, 2, 3, 4, 5, 6] }),
+    TextAlign.configure({ types: ["heading", "paragraph"] }),
+    Link.configure({
         openOnClick: false,
         autolink: true,
         linkOnPaste: true,
         HTMLAttributes: { rel: "noopener noreferrer", target: "_blank" },
+    }),
+    Details.configure({ HTMLAttributes: { class: "border rounded p-2 my-2" } }),
+    DetailsSummary,
+    DetailsContent,
+    Placeholder.configure({
+        includeChildren: true,
+        placeholder: ({ node }) => {
+          if (node.type.name === 'detailsSummary') {
+            return 'Summary'
+          }
+
+          return null
+        },
       }),
     ],
-    content: value || "",
+
+    content: value || `
+      <p>Look at these details</p>
+      <details>
+        <summary>This is a summary</summary>
+        <p>Surprise!</p>
+      </details>
+      <p>Nested details are also supported</p>
+      <details open>
+        <summary>This is another summary</summary>
+        <p>And there is even more.</p>
+        <details>
+          <summary>We need to go deeper</summary>
+          <p>Booya!</p>
+        </details>
+      </details>
+    `,
     onUpdate: ({ editor }) => onChange?.(editor.getHTML()),
   });
 
@@ -299,6 +332,61 @@ export default function TipTapEditor({
             <UnlinkIcon size={iconSize} />
           </button>
           </div>
+
+        {/* Details */}
+        <div className={styleValue}>
+            {/* Insert a new <details> block */}
+            <button
+                type="button"
+                onClick={() =>
+                editor
+                    .chain()
+                    .focus()
+                    .insertContent({
+                    type: "details",
+                    attrs: { open: true },
+                    content: [
+                        {
+                            type: "detailsSummary",
+                            content: [{ type: "text", text: "Summary" }],
+                        },
+                        {
+                        type: "detailsContent",
+                        attrs: { open: true },
+                        content: [
+                            {
+                                type: "paragraph",
+                                content: [{ type: "text", text: "Details content…" }],
+                            },
+                        ],
+                        },
+                    ],
+                    })
+                    .run()
+                }
+                disabled={!editor || disabled}
+                className={`${btnBase} ${dis}`}
+                title="Insert details"
+            >
+                <SquarePlus size={iconSize} />
+            </button>
+
+            {/* Toggle open/closed on the current details block */}
+            <button
+                type="button"
+                onClick={() => {
+                const isOpen = !!editor.getAttributes("details").open;
+                editor.chain().focus().updateAttributes("details", { open: !isOpen }).run();
+                }}
+                disabled={!editor || disabled || !editor.isActive("details")}
+                className={`${btnBase} ${editor.isActive("details") ? activeCls : ""} ${dis}`}
+                title="Toggle details open/closed"
+                aria-pressed={editor.isActive("details")}
+            >
+                <ChevronDown size={iconSize} />
+            </button>
+         </div>
+
       </div>
 
       {/* Editor */}

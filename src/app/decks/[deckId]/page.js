@@ -9,7 +9,6 @@ export default async function DeckPage({ params }) {
       <h1 className="text-2xl font-bold">Deck: {deckId}</h1>
       <AddCard_BTN deckId={deckId} />
       <ShowCards deckId={deckId} />
-      <p>This is where the cards for this deck will appear.</p>
     </div>
   );
 }
