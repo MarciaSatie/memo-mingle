@@ -52,7 +52,48 @@ h1, h2 {
   color: var(--title);
 }
 
-/* Restore list markers inside the TipTap editor (Tailwind resets them) */
+/* Lists (restore markers Tailwind removes) */
 .tiptap ul { list-style: disc; padding-left: 1.5rem; }
 .tiptap ol { list-style: decimal; padding-left: 1.5rem; }
 .tiptap li { margin: 0.25rem 0; }
+
+/* Code blocks */
+.tiptap pre {
+  background: #f4f4f5;          /* neutral-100/200 */
+  color: #111827;               /* neutral-900 */
+  padding: 0.75rem;             /* p-3 */
+  border-radius: 0.5rem;        /* rounded-lg */
+  overflow: auto;               /* allow horizontal scroll */
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  border: 1px solid rgba(0,0,0,0.06);
+}
+/* Code blocks */
+.tiptap pre {
+  background: #1e1e1e;   /* dark grey, like VSCode dark */
+  color: #f5f5f5;        /* white-ish text */
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  overflow: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.tiptap pre code {
+  background: transparent; 
+  padding: 0;
+  color: inherit;         /* inherit the white text color */
+}
+
+/* Inline code (still slightly grey so it doesn’t clash with normal text) */
+.tiptap code {
+  background: #2d2d2d;
+  color: #f5f5f5;
+  padding: 0.15rem 0.35rem;
+  border-radius: 0.375rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.9em;
+}

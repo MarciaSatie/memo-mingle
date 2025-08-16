@@ -94,7 +94,7 @@ export default function AddCard({ deckId }) {
 
   return (
     <div className="p-4 rounded-2xl shadow-soft border space-y-4">
-      <div className="bg-white flex flex-col gap-3 sm:flex-row">
+      <div className="flex flex-col gap-3 sm:flex-row">
         <input
           type="text"
           placeholder="Card title"
@@ -103,16 +103,16 @@ export default function AddCard({ deckId }) {
           className="bg-white text-black flex-1 border rounded-xl px-3 py-2"
         />
         <input
+        
           type="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
-          className="border rounded-xl px-3 py-2"
+          className="border rounded-xl px-3 py-2 bg-white text-black"
         />
       </div>
 
       <div>
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm text-gray-500">Content</span>
 
           <div className="flex items-center">
             <button
