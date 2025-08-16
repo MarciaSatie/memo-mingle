@@ -1,6 +1,9 @@
+"use client";
 import Sidebar from "@/components/decks/Sidebar";
 
-export default function SidebarMenu({ children }) {
+
+export default function SidebarMenu({ children })
+ {
   return (
     <div className="flex min-h-screen">
       <Sidebar expanded={true} />

@@ -1,10 +1,36 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
-import { db } from "@/firebase";
+import { db } from "../../app/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
-import "react-quill/dist/quill.snow.css";
+const CodeMirror = dynamic(
+  () => import("@uiw/react-codemirror").then((m) => m.default),
+  { ssr: false }
+);
+import { html } from "@codemirror/lang-html";
+import { oneDark } from "@codemirror/theme-one-dark";
+import TipTapEditor from "../editor/TipTapEditor";
+import prettier from "prettier/standalone";
+
+/* ---------------- Helpers ---------------- */
+
+// Lazy-load the Prettier HTML plugin only when needed (avoids Turbopack issues)
+async function prettifyHtml(source) {
+  try {
+    const htmlPlugin = await import("prettier/plugins/html");
+    const pretty = await prettier.format(source, {
+      parser: "html",
+      plugins: [htmlPlugin],
+    });
+    return pretty;
+  } catch (err) {
+    console.warn(
+      "⚠️ Prettier HTML plugin load/format failed:",
+      err?.message || err
+    );
+    return source; // fallback to original text
+  }
+}
 
 export default function AddCard({ deckId }) {
   const [title, setTitle] = useState("");
@@ -14,48 +40,126 @@ export default function AddCard({ deckId }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-    // Define Quill modules for the editor
-  const modules = useMemo(() => ({
-    toolbar: [[{ header: [1, 2, 3, false] }], ["bold","italic","underline","strike"], [{ list: "ordered" }, { list: "bullet" }], ["blockquote", "code-block"], ["link","image"], [{ align: [] }], ["clean"]],
-  }), []);
-
-
   async function handleSave() {
     setError("");
-    if (!deckId) { setError("Missing deckId"); return; }
-    if (!title.trim()) { setError("Title is required"); return; }
+    if (!deckId) {
+      setError("Missing deckId");
+      return;
+    }
+    if (!title.trim()) {
+      setError("Title is required");
+      return;
+    }
+
     setSaving(true);
     try {
+      // Prettify HTML before saving (works for both modes)
+      const contentToSave = await prettifyHtml(content || "");
+
       await addDoc(collection(db, "decks", deckId, "cards"), {
         title: title.trim(),
         date: date || new Date().toISOString().split("T")[0],
-        content, createdAt: serverTimestamp(),
+        content: contentToSave,
+        createdAt: serverTimestamp(),
       });
-      setTitle(""); setDate(""); setContent("");
-    } catch (e) { console.error(e); setError("Failed to save card"); }
-    finally { setSaving(false); }
+
+      // Reset form
+      setTitle("");
+      setDate("");
+      setContent("");
+    } catch (e) {
+      console.error(e);
+      setError("Failed to save card");
+    } finally {
+      setSaving(false);
+    }
   }
+
+  // When switching into HTML mode, pretty-print existing content for readability
+  useEffect(() => {
+    if (!isHtmlMode || !content) return;
+    (async () => {
+      const pretty = await prettifyHtml(content);
+      setContent(pretty);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isHtmlMode]);
+
+  // Manual “Format HTML” action
+  async function formatHtmlNow() {
+    if (!content) return;
+    const pretty = await prettifyHtml(content);
+    setContent(pretty);
+  }
+
   return (
-    <div className="p-4 bg-white rounded-2xl shadow-soft border space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <input type="text" placeholder="Card title" value={title} onChange={(e)=>setTitle(e.target.value)} className="flex-1 border rounded-xl px-3 py-2" />
-        <input type="date" value={date} onChange={(e)=>setDate(e.target.value)} className="border rounded-xl px-3 py-2" />
+    <div className="p-4 rounded-2xl shadow-soft border space-y-4">
+      <div className="bg-white flex flex-col gap-3 sm:flex-row">
+        <input
+          type="text"
+          placeholder="Card title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="bg-white text-black flex-1 border rounded-xl px-3 py-2"
+        />
+        <input
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          className="border rounded-xl px-3 py-2"
+        />
       </div>
+
       <div>
         <div className="flex items-center justify-between mb-2">
           <span className="text-sm text-gray-500">Content</span>
-          <button onClick={()=>setIsHtmlMode(!isHtmlMode)} className="text-sm px-3 py-1 rounded-xl border hover:bg-gray-50">
-            {isHtmlMode ? "Switch to Editor" : "Switch to HTML"}
-          </button>
+
+          <div className="flex items-center">
+            <button
+              onClick={() => setIsHtmlMode((v) => !v)}
+              className="text-sm px-3 py-1 rounded-xl border hover:bg-gray-50"
+            >
+              {isHtmlMode ? "Switch to Editor" : "Switch to HTML"}
+            </button>
+
+            {isHtmlMode && (
+              <button
+                onClick={formatHtmlNow}
+                className="ml-2 text-sm px-3 py-1 rounded-xl border hover:bg-gray-50"
+                disabled={!content}
+                title="Prettify the HTML"
+              >
+                Format HTML
+              </button>
+            )}
+          </div>
         </div>
+
         {isHtmlMode ? (
-          <textarea value={content} onChange={(e)=>setContent(e.target.value)} rows={10} className="w-full border rounded-xl p-3 font-mono text-sm" placeholder="Write/edit raw HTML here..." />
+          <CodeMirror
+            value={content}
+            height="200px"
+            extensions={[html()]}
+            onChange={(value) => setContent(value)}
+            theme={oneDark}
+          />
         ) : (
-          <ReactQuill value={content} onChange={setContent} theme="snow" modules={modules} className="bg-white rounded-xl" />
+          <TipTapEditor
+            value={content}
+            onChange={setContent}
+            disabled={isHtmlMode}
+            className="border rounded-xl p-3 bg-white text-black min-h-[200px]"
+          />
         )}
       </div>
+
       {error && <p className="text-sm text-red-600">{error}</p>}
-      <button onClick={handleSave} disabled={saving} className="px-4 py-2 rounded-2xl bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60">
+
+      <button
+        onClick={handleSave}
+        disabled={saving}
+        className="px-4 py-2 rounded-2xl bg-fuchsia-300 text-white hover:bg-fuchsia-400 disabled:opacity-60"
+      >
         {saving ? "Saving..." : "Save Card"}
       </button>
     </div>

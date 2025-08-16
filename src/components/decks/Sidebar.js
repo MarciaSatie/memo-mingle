@@ -20,16 +20,8 @@ import Image from "next/image";                        // ✅ for deck icons
 export default function Sidebar({ expanded = true }) {
   // 1) read auth state reactively
   const { user, loading } = useAuth();
-  if (loading) return <div className="p-3 text-sm">Loading…</div>;
-
-  // 2) layout styles (let parent control height)
-  const base = "h-screen border-r flex flex-col bg-neutral-800 text-white";
-  const width = expanded ? "w-72" : "w-16";
-
-  // 3) local state for this user's decks
   const [decks, setDecks] = useState([]);
 
-  // 4) subscribe to this user's decks; rerun when user changes
   useEffect(() => {
     // reset visible state each time user changes
     setDecks([]);
@@ -57,6 +49,13 @@ export default function Sidebar({ expanded = true }) {
 
     return () => unsubscribe();
   }, [user]);
+
+  if (loading) return <div className="p-3 text-sm">Loading…</div>;
+
+  // 2) layout styles (let parent control height)
+  const base = "h-screen border-r flex flex-col bg-neutral-800 text-white";
+  const width = expanded ? "w-72" : "w-16";
+
 
   return (
     <aside className={`${base} ${width}`}>
