@@ -23,7 +23,7 @@ export default function Sidebar({ expanded = true }) {
   if (loading) return <div className="p-3 text-sm">Loading…</div>;
 
   // 2) layout styles (let parent control height)
-  const base = "h-full border-r flex flex-col bg-neutral-800 text-white";
+  const base = "h-screen border-r flex flex-col bg-neutral-800 text-white";
   const width = expanded ? "w-72" : "w-16";
 
   // 3) local state for this user's decks
@@ -77,21 +77,8 @@ export default function Sidebar({ expanded = true }) {
         )}
       </div>
 
-      {/* list */}
-      <nav className="mt-2 px-1 pb-3 space-y-1 overflow-auto">
-        {(!user || decks.length === 0) ? (
-          <p className="text-sm text-neutral-400 px-2">
-            {user ? "No decks yet. Add one ↑" : "Sign in to see your decks."}
-          </p>
-        ) : (
-          decks.map((deck) => (
-            <DeckLink key={deck.id} deck={deck} expanded={expanded} />
-          ))
-        )}
-      </nav>
-
       {/* add form */}
-      <div className="px-3 pt-2 pb-4 mt-auto">
+      <div className="px-1 pt-2 pb-4">
         <NewDeckForm
           expanded={expanded}
           onCreate={async ({ id, name }) => {
@@ -109,6 +96,22 @@ export default function Sidebar({ expanded = true }) {
           }}
         />
       </div>
+
+
+      {/* list */}
+      <nav className="mt-2 px-1 pb-3 space-y-1 overflow-auto">
+        {(!user || decks.length === 0) ? (
+          <p className="text-sm text-neutral-400 px-2">
+            {user ? "No decks yet. Add one ↑" : "Sign in to see your decks."}
+          </p>
+        ) : (
+          decks.map((deck) => (
+            <DeckLink key={deck.id} deck={deck} expanded={expanded} />
+          ))
+        )}
+      </nav>
+
+
     </aside>
   );
 }
