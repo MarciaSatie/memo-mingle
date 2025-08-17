@@ -19,9 +19,13 @@ import {
   writeBatch,
 } from "firebase/firestore";
 
+
+
 export default function ShowDecks({ expanded = true }) {
   const { user } = useAuth();
   const [decks, setDecks] = useState([]);
+  const [openCard, setOpenCard] = useState(null);
+
 
   useEffect(() => {
     setDecks([]);

@@ -11,12 +11,17 @@ import {
   deleteDoc,
   updateDoc,
 } from "firebase/firestore";
-import { Pencil, Trash2, Star } from "lucide-react";
 import TipTapEditor from "../editor/TipTapEditor";
+import Modal from "../common/Modal"; 
+import { Pencil, Trash2, Star, X } from "lucide-react";
+
 
 export default function ShowCards({ deckId }) {
   const [cards, setCards] = useState([]);
   const [hoveredId, setHoveredId] = useState(null);
+
+  // View modal state
+  const [openCard, setOpenCard] = useState(null);
 
   // Edit modal state
   const [editing, setEditing] = useState(null); // { id } or null
@@ -36,6 +41,8 @@ export default function ShowCards({ deckId }) {
   }, [deckId]);
 
   function startEdit(card) {
+    setHoveredId(null);
+    setOpenCard(null); // close viewer if open
     setEditing({ id: card.id });
     setEditTitle(card.title || "");
     setEditDate(card.date || "");
@@ -65,6 +72,9 @@ export default function ShowCards({ deckId }) {
     const ok = window.confirm("Delete this card? This cannot be undone.");
     if (!ok) return;
     await deleteDoc(doc(db, "decks", deckId, "cards", cardId));
+    // If we deleted the currently open/edited card, close modals
+    if (openCard?.id === cardId) setOpenCard(null);
+    if (editing?.id === cardId) closeEdit();
   }
 
   async function toggleFavorite(card, e) {
@@ -72,13 +82,15 @@ export default function ShowCards({ deckId }) {
     const ref = doc(db, "decks", deckId, "cards", card.id);
     try {
       await updateDoc(ref, { favorite: card.favorite ? false : true });
-      // onSnapshot will refresh the UI
     } catch (err) {
       console.error("Failed to toggle favorite:", err);
       alert("Failed to update favorite.");
     }
   }
 
+  const modalOpen = !!openCard || !!editing;
+  let btnStyle = "border-2 border-fuchsia-500 rounded-xl p-2";
+  
   return (
     <>
       {/* Cards container */}
@@ -88,9 +100,19 @@ export default function ShowCards({ deckId }) {
           return (
             <div
               key={card.id}
-              onMouseEnter={() => setHoveredId(card.id)}
-              onMouseLeave={() => setHoveredId(null)}
-              className="absolute w-72 h-96 rounded-2xl border p-4 transition-transform duration-300 cursor-pointer bg-white shadow-sm"
+              onClick={() => {
+                setHoveredId(null);
+                setOpenCard(card);
+              }}
+              onMouseEnter={() => {
+                if (modalOpen) return; // disable hover while modal is open
+                setHoveredId(card.id);
+              }}
+              onMouseLeave={() => {
+                if (modalOpen) return;
+                setHoveredId(null);
+              }}
+              className="relative cursor-pointer absolute w-72 h-96 rounded-2xl border p-4 transition-transform duration-300 bg-white shadow-sm"
               style={{
                 top: `${index * 24}px`,
                 left: `${index * 24}px`,
@@ -152,7 +174,7 @@ export default function ShowCards({ deckId }) {
 
               {/* Main content with pink border */}
               <div className="mt-3 h-[calc(100%-88px)]">
-                <div className="tiptap prose max-h-64 overflow-auto border border-fuchsia-500 rounded-xl p-3">
+                <div className={"tiptap prose max-h-64 overflow-auto border border-fuchsia-500 rounded-xl p-3"}>
                   <div dangerouslySetInnerHTML={{ __html: card.content }} />
                 </div>
               </div>
@@ -161,19 +183,53 @@ export default function ShowCards({ deckId }) {
         })}
       </div>
 
-      {/* Edit Modal with TipTap */}
-      {editing && (
-        <div className="fixed inset-0 z-50 grid place-items-center pointer-events-none">
-          {/* Dim backdrop (click-through) */}
-          <div className="absolute inset-0 bg-black/40 pointer-events-none" />
-          {/* Interactive panel */}
-          <div className="relative w-[720px] max-w-[95vw] bg-white text-gray-800 rounded-2xl shadow-xl border border-title p-4 pointer-events-auto max-h-[90vh] overflow-y-auto">
+      {/* VIEW MODAL: full card */}
+      <Modal open={!!openCard} onClose={() => setOpenCard(null)}>
+        {openCard && (
+          <div>
+            <div className="flex items-start justify-between gap-4 mb-3 ">
+              <div>
+                <h2 className="text-xl font-bold">{openCard.title || "Untitled"}</h2>
+                <p className="text-xs text-neutral-400">{openCard.date || ""}</p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => startEdit(openCard)}
+                  className="p-2 rounded hover:bg-gray-100 text-gray-700 border-2 border-fuchsia-500 rounded-xl p-3"
+                  title="Edit"
+                  aria-label="Edit"
+                >
+                  <Pencil size={18} />
+                </button>
+                <button
+                  onClick={() => setOpenCard(null)}
+                  className="p-2 rounded hover:bg-gray-100 text-gray-700"
+                  title="Close"
+                  aria-label="Close"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+
+            <div className="tiptap prose max-w-none">
+              <div dangerouslySetInnerHTML={{ __html: openCard.content }} />
+            </div>
+          </div>
+        )}
+      </Modal>
+
+
+      {/* EDIT MODAL: TipTap editor */}
+      <Modal open={!!editing} onClose={closeEdit}>
+        {editing && (
+          <div className="bg-white text-gray-800 rounded-xl">
             {/* Header */}
             <div className="flex items-center justify-between mb-3">
-              <h3 className="font-semibold text-lg text-title">Edit Card</h3>
+              <h3 className="font-semibold text-lg text-pink-600">Edit Card</h3>
               <button
                 onClick={closeEdit}
-                className="text-sm px-3 py-1 rounded border border-title text-title hover:bg-pink-50"
+                className="text-sm px-3 py-1 rounded border border-pink-500 text-pink-600 hover:bg-pink-50"
               >
                 Close
               </button>
@@ -196,18 +252,18 @@ export default function ShowCards({ deckId }) {
               />
             </div>
 
-            {/* TipTap editor for editing content */}
+            {/* TipTap editor */}
             <TipTapEditor
               value={editContent}
               onChange={setEditContent}
-              className="border border-title rounded-xl bg-white text-gray-800 p-3 min-h-[200px]"
+              className="border border-pink-500 rounded-xl bg-white text-gray-800 p-3 min-h-[200px]"
             />
 
             {/* Footer */}
             <div className="mt-4 flex justify-end gap-2">
               <button
                 onClick={closeEdit}
-                className="px-4 py-2 rounded-xl border border-title text-title hover:bg-pink-50"
+                className="px-4 py-2 rounded-xl border border-pink-500 text-pink-600 hover:bg-pink-50"
               >
                 Cancel
               </button>
@@ -219,8 +275,8 @@ export default function ShowCards({ deckId }) {
               </button>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
     </>
   );
 }
