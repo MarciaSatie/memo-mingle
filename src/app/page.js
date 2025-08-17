@@ -9,13 +9,7 @@ export default function Home() {
     // simple container; SidebarMenu (in layout.js) already provides the <main> shell
     <div className="font-sans p-8 space-y-8">
 
-      {/* top-right: auth controls */}
-      <div className="flex justify-end">
-        <AuthButtons />
-      </div>
 
-      {/* your page content */}
-      <Header />
       <HomePage />
 
       {/* dev helper: shows "auth: signed out" or the UID; remove when you’re done */}
