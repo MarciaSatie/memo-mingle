@@ -28,7 +28,7 @@ export default function OverlapCarousel({
 
   return (
     <div
-      className={`relative rounded-2xl border bg-gradient-to-br from-slate-50 to-slate-100 ${className}`}
+      className={`relative rounded-2xl border bg-gray-900 ${className}`}
       style={{ height }}
     >
       {showArrows && (
@@ -36,7 +36,7 @@ export default function OverlapCarousel({
           <button
             type="button"
             onClick={() => scrollBy(-1)}
-            className="absolute left-2 top-1/2 -translate-y-1/2 z-[1000] rounded-full border bg-white/80 px-3 py-2 shadow hover:bg-white"
+            className="absolute left-2 top-1/2 -translate-y-1/2 z-[1000] rounded-full border bg-white/80 px-3 py-2 shadow hover:bg-white "
             aria-label="Previous"
           >
             ‹
@@ -58,7 +58,7 @@ export default function OverlapCarousel({
         className="relative w-full h-full overflow-x-auto overflow-y-hidden"
       >
         {/* track */}
-        <div className="relative h-full" style={{ width: trackWidth }}>
+        <div className="relative h-full m-10" style={{ width: trackWidth }}>
           {items.map((item, index) => (
             <div
               key={item.id ?? index}
