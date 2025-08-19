@@ -80,18 +80,7 @@ export default function AddDeck({ expanded = true }) {
       </div>
 
 
-      {/* list */}
-      <nav className="mt-2 px-1 pb-3 space-y-1 overflow-auto">
-        {(!user || decks.length === 0) ? (
-          <p className="text-sm text-neutral-400 px-2">
-            {user ? "No decks yet. Add one ↑" : "Sign in to see your decks."}
-          </p>
-        ) : (
-          decks.map((deck) => (
-            <DeckLink key={deck.id} deck={deck} expanded={expanded} />
-          ))
-        )}
-      </nav>
+
     </>
 
 
@@ -104,6 +93,7 @@ export default function AddDeck({ expanded = true }) {
 
 function NewDeckForm({ expanded, onCreate }) {
   const [name, setName] = useState("");
+  const width = useWindowWidth();
 
   function handleSubmit(e) {
     e.preventDefault();
@@ -120,8 +110,17 @@ function NewDeckForm({ expanded, onCreate }) {
     setName("");
   }
 
-  if (!expanded) {
+  if (width < 640) {
     return (
+      <>
+      <input
+        type="text"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="New deck name"
+        className="flex-1 rounded border border-white/20 bg-transparent px-3 py-2 text-sm placeholder:text-neutral-400 focus:outline-none focus:ring"
+        aria-label="New deck name"
+      />
       <button
         onClick={handleSubmit}
         className="w-10 h-10 grid place-items-center rounded border border-white/20 hover:bg-neutral-700 focus:outline-none focus:ring"
@@ -130,6 +129,7 @@ function NewDeckForm({ expanded, onCreate }) {
       >
         +
       </button>
+      </>
     );
   }
 
@@ -157,4 +157,20 @@ import { usePathname } from "next/navigation";
 function DeckLink({ deck, expanded }) {
   const href = `/decks/${deck.id}`;
 
+}
+
+function useWindowWidth() {
+  const [width, setWidth] = useState(
+    typeof window !== "undefined" ? window.innerWidth : 0
+  );
+
+  useEffect(() => {
+    function handleResize() {
+      setWidth(window.innerWidth);
+    }
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  return width;
 }

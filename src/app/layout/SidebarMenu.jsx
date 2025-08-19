@@ -8,12 +8,14 @@ import { useState } from "react";
 export default function SidebarMenu({ children })
  {
   const [expanded, setExpanded] = useState(true);
+  const expandedClasses = "w-72 min-w-40"; 
+  const collapsedClasses = "w-0 min-w-0"; 
   const base = "h-screen border-r flex flex-col bg-neutral-800 text-white overflow-y-auto transition-width duration-300";
-  const width = expanded ? "w-72" : "w-0";
+  const width = expanded ? expandedClasses : collapsedClasses;
   
   return (
     
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen min-w-screen">
       
       <aside className={`${base} ${width}`}>
         <HeaderDeck expanded={expanded} />
