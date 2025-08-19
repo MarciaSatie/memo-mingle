@@ -20,7 +20,7 @@ export default async function DeckPage({ params }) {
   }
 
   return (
-    <div className="p-6 space-y-3">
+    <div className="pt-12 p-6 space-y-3">
       <h1 className="text-2xl font-bold">Deck: {deckName}</h1>
       <AddCard_BTN deckId={deckId} />
       <ShowCards deckId={deckId} />
